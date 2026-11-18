@@ -6,6 +6,7 @@ export const projectEntrySchema=z.object({
   category:z.string().trim().max(80),
   description:z.string().trim().max(1500),
   link:projectLink,
+  cover:projectLink.optional(),
   style:z.enum(projectStyles),
 });
 export type ProjectEntry=z.infer<typeof projectEntrySchema>;
