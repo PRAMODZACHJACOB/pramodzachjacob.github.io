@@ -1,6 +1,0 @@
- 'use client';
-import {useState,type FormEvent} from 'react';
-export default function Owner(){const [password,setPassword]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
- async function login(e:FormEvent){e.preventDefault();setBusy(true);setError('');try{const response=await fetch('/api/owner/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})}),data=await response.json();if(!response.ok)throw new Error(data.error);window.location.assign('/#work')}catch(e){setError(e instanceof Error?e.message:'Could not sign in.');setPassword('')}finally{setBusy(false)}}
- return <main className="owner-login"><div className="ambient"/><form className="neu" onSubmit={login}><a className="footer-wordmark" href="/">ZACH JACOB.</a><p className="eyebrow">YOUR CREATIVE SPACE</p><h1>Welcome back.</h1><p>Sign in to edit your CV and project spaces.</p><label className="field"><span>Owner password</span><input type="password" autoComplete="current-password" required value={password} maxLength={512} onChange={e=>setPassword(e.target.value)}/></label>{error&&<p role="alert">{error}</p>}<button className="button neu accent-button" disabled={busy}>{busy?'Signing in…':'Sign in'}</button><a href="/">Back to portfolio</a></form></main>
-}
