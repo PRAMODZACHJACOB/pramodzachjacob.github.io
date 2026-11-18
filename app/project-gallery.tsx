@@ -2,13 +2,17 @@
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {Plus,Pencil,ArrowUpRight,X,Check,Link as LinkIcon,RotateCcw} from 'lucide-react';
 import {initialProjects,projectStyles,type PortfolioProject,type ProjectEntry} from '../lib/projects';
+function withUploadedVideo(projects:PortfolioProject[]):PortfolioProject[]{
+  return projects.map(project=>project.id==='project-space-01'&&!project.link&&project.title==='Project placeholder 01'?{...project,title:'G-LIM Dishwasher Ad',category:'Advertisement',link:'https://verdant-genie-c4ad12.netlify.app/OUT_V2.mp4'}:project);
+}
+function isVideo(link:string){try{return /\.(mp4|webm|ogv)$/i.test(new URL(link).pathname)}catch{return false}}
 type ProjectResponse={projects:PortfolioProject[];revision:number;canEdit:boolean;error?:string};
 export default function ProjectGallery(){
-  const [projects,setProjects]=useState(initialProjects),[revision,setRevision]=useState(0),[canEdit,setCanEdit]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState(false),[opened,setOpened]=useState(false),[editingId,setEditingId]=useState<string|null>(null),[notice,setNotice]=useState('');
+  const [projects,setProjects]=useState(withUploadedVideo(initialProjects)),[revision,setRevision]=useState(0),[canEdit,setCanEdit]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState(false),[opened,setOpened]=useState(false),[editingId,setEditingId]=useState<string|null>(null),[notice,setNotice]=useState('');
   const empty:ProjectEntry={title:'',category:'',description:'',link:'',style:'coral'};
   const [draft,setDraft]=useState<ProjectEntry>(empty),original=useRef(''),dialog=useRef<HTMLDialogElement>(null);
   async function load(){
-    try{const response=await fetch('/api/projects',{cache:'no-store'}),data=await response.json() as ProjectResponse;if(!response.ok)throw new Error(data.error);setProjects(data.projects);setRevision(data.revision);setCanEdit(data.canEdit);setError('')}
+    try{const response=await fetch('/api/projects',{cache:'no-store'}),data=await response.json() as ProjectResponse;if(!response.ok)throw new Error(data.error);setProjects(withUploadedVideo(data.projects));setRevision(data.revision);setCanEdit(data.canEdit);setError('')}
     catch(e){setError(e instanceof Error?e.message:'Projects could not be loaded.')}
   }
   useEffect(()=>{load()},[]);
@@ -22,13 +26,14 @@ export default function ProjectGallery(){
   function close(){if(busy)return;if(original.current!==JSON.stringify(draft)&&!confirm('Discard your unsaved project details?'))return;setOpened(false)}
   async function save(event:FormEvent){
     event.preventDefault();setBusy(true);setError('');
-    try{const response=await fetch('/api/projects',{method:editingId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entry:draft,revision,projectId:editingId??undefined})});const data=await response.json() as ProjectResponse;if(!response.ok)throw new Error(data.error);setProjects(data.projects);setRevision(data.revision);setCanEdit(data.canEdit);setOpened(false);setNotice(editingId?'Project updated.':'New project space added.')}
+    try{const response=await fetch('/api/projects',{method:editingId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entry:draft,revision,projectId:editingId??undefined})});const data=await response.json() as ProjectResponse;if(!response.ok)throw new Error(data.error);setProjects(withUploadedVideo(data.projects));setRevision(data.revision);setCanEdit(data.canEdit);setOpened(false);setNotice(editingId?'Project updated.':'New project space added.')}
     catch(e){setError(e instanceof Error?e.message:'The project could not be saved.')}finally{setBusy(false)}
   }
   function card(project:PortfolioProject,index:number){
-    const content=<><div className={`abstract-art art-${project.style}`} aria-hidden="true"><i/><i/><i/><i/><b/></div><div className="project-caption"><div>{project.category&&<p className="project-category">{project.category}</p>}<h3>{project.title}</h3>{project.description&&<p className="project-description">{project.description}</p>}</div><span className="project-arrow icon-button neu" aria-hidden="true"><ArrowUpRight size={17}/></span></div></>;
+    const video=isVideo(project.link);
+    const content=<>{video?<video controls playsInline preload="metadata" aria-label={project.title} style={{display:'block',width:'100%',height:'auto',aspectRatio:'16 / 9',objectFit:'contain',borderRadius:19,background:'#111'}}><source src={project.link}/>Your browser cannot play this video. <a href={project.link}>Open video</a></video>:<div className={`abstract-art art-${project.style}`} aria-hidden="true"><i/><i/><i/><i/><b/></div>}<div className="project-caption"><div>{project.category&&<p className="project-category">{project.category}</p>}<h3>{project.title}</h3>{project.description&&<p className="project-description">{project.description}</p>}</div><span className="project-arrow icon-button neu" aria-hidden="true"><ArrowUpRight size={17}/></span></div></>;
     return <article className="project-card neu" key={project.id}>
-      {project.link?<a className="project-card-main" href={project.link} target="_blank" rel="noopener noreferrer" aria-label={`Open ${project.title}`}>{content}</a>:<div className="project-card-main">{content}</div>}
+      {project.link&&!video?<a className="project-card-main" href={project.link} target="_blank" rel="noopener noreferrer" aria-label={`Open ${project.title}`}>{content}</a>:<div className="project-card-main">{content}</div>}
       {canEdit&&<button className="project-edit icon-button neu" onClick={()=>show(project)} aria-label={`Edit project space ${index+1}`}>{project.link?<Pencil size={16}/>:<Plus size={20}/>}</button>}
     </article>
   }
@@ -41,7 +46,7 @@ export default function ProjectGallery(){
     <dialog ref={dialog} className="project-dialog" aria-label={editingId?'Edit project space':'Add project space'} onCancel={e=>{e.preventDefault();close()}} onClick={e=>{if(e.target===e.currentTarget)close()}}>
       <form onSubmit={save} className="project-form">
         <div className="project-form-heading"><div><p className="eyebrow">YOUR WORK, YOUR WAY</p><h2>{editingId?'Make this space yours.':'Room for another idea.'}</h2></div><button type="button" className="icon-button" aria-label="Close project editor" onClick={close}><X size={21}/></button></div>
-        <p className="project-form-note">Add a placeholder now, or include your project details and a link.</p>
+        <p className="project-form-note">Add your project details. Use a direct MP4 or WebM video link to play it inside this space.</p>
         {error&&<p className="error-banner" role="alert">{error}</p>}
         <label className="field"><span>Project title</span><input required maxLength={160} value={draft.title} onChange={e=>setDraft(d=>({...d,title:e.target.value}))}/></label>
         <label className="field"><span>Category (optional)</span><input maxLength={80} placeholder="e.g. AI video, animation, design" value={draft.category} onChange={e=>setDraft(d=>({...d,category:e.target.value}))}/></label>
