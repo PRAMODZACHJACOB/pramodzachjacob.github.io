@@ -9,7 +9,7 @@ function isVideo(link:string){try{return /\.(mp4|webm|ogv)$/i.test(new URL(link)
 type ProjectResponse={projects:PortfolioProject[];revision:number;canEdit:boolean;error?:string};
 export default function ProjectGallery(){
   const [projects,setProjects]=useState(withUploadedVideo(initialProjects)),[revision,setRevision]=useState(0),[canEdit,setCanEdit]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState(false),[opened,setOpened]=useState(false),[editingId,setEditingId]=useState<string|null>(null),[notice,setNotice]=useState('');
-  const empty:ProjectEntry={title:'',category:'',description:'',link:'',style:'coral'};
+  const empty:ProjectEntry={title:'',category:'',description:'',link:'',cover:'',style:'coral'};
   const [draft,setDraft]=useState<ProjectEntry>(empty),original=useRef(''),dialog=useRef<HTMLDialogElement>(null);
   async function load(){
     try{const response=await fetch('/api/projects',{cache:'no-store'}),data=await response.json() as ProjectResponse;if(!response.ok)throw new Error(data.error);setProjects(withUploadedVideo(data.projects));setRevision(data.revision);setCanEdit(data.canEdit);setError('')}
@@ -20,7 +20,7 @@ export default function ProjectGallery(){
   useEffect(()=>{if(!notice)return;const timer=setTimeout(()=>setNotice(''),4500);return()=>clearTimeout(timer)},[notice]);
   function show(project?:PortfolioProject){
     if(!canEdit)return;
-    const value:ProjectEntry=project?{title:project.title,category:project.category,description:project.description,link:project.link,style:project.style}:{...empty,title:`Project placeholder ${String(projects.length+1).padStart(2,'0')}`,style:projectStyles[projects.length%projectStyles.length]};
+    const value:ProjectEntry=project?{title:project.title,category:project.category,description:project.description,link:project.link,cover:project.cover??'',style:project.style}:{...empty,title:`Project placeholder ${String(projects.length+1).padStart(2,'0')}`,style:projectStyles[projects.length%projectStyles.length]};
     setDraft(value);original.current=JSON.stringify(value);setEditingId(project?.id??null);setError('');setOpened(true);
   }
   function close(){if(busy)return;if(original.current!==JSON.stringify(draft)&&!confirm('Discard your unsaved project details?'))return;setOpened(false)}
@@ -31,7 +31,7 @@ export default function ProjectGallery(){
   }
   function card(project:PortfolioProject,index:number){
     const video=isVideo(project.link);
-    const content=<>{video?<video key={project.link} controls playsInline preload="metadata" aria-label={project.title} style={{display:'block',width:'100%',height:'auto',objectFit:'contain',borderRadius:19,background:'#111'}}><source src={project.link}/>Your browser cannot play this video. <a href={project.link}>Open video</a></video>:<div className={`abstract-art art-${project.style}`} aria-hidden="true"><i/><i/><i/><i/><b/></div>}<div className="project-caption"><div>{project.category&&<p className="project-category">{project.category}</p>}<h3>{project.title}</h3>{project.description&&<p className="project-description">{project.description}</p>}</div><span className="project-arrow icon-button neu" aria-hidden="true"><ArrowUpRight size={17}/></span></div></>;
+    const content=<>{video?<video key={project.link} controls playsInline preload="metadata" poster={project.cover||undefined} onLoadedMetadata={event=>{const video=event.currentTarget;if(video.videoWidth&&video.videoHeight)video.style.aspectRatio=`${video.videoWidth} / ${video.videoHeight}`}} aria-label={project.title} style={{display:'block',width:'100%',height:'auto',objectFit:'contain',borderRadius:19,background:'#111'}}><source src={project.link}/>Your browser cannot play this video. <a href={project.link}>Open video</a></video>:<div className={`abstract-art art-${project.style}`} aria-hidden="true"><i/><i/><i/><i/><b/></div>}<div className="project-caption"><div>{project.category&&<p className="project-category">{project.category}</p>}<h3>{project.title}</h3>{project.description&&<p className="project-description">{project.description}</p>}</div><span className="project-arrow icon-button neu" aria-hidden="true"><ArrowUpRight size={17}/></span></div></>;
     return <article className="project-card neu" key={project.id} style={{alignSelf:'start',minWidth:0}}>
       {project.link&&!video?<a className="project-card-main" href={project.link} target="_blank" rel="noopener noreferrer" aria-label={`Open ${project.title}`}>{content}</a>:<div className="project-card-main">{content}</div>}
       {canEdit&&<button className="project-edit icon-button neu" onClick={()=>show(project)} aria-label={`Edit project space ${index+1}`}>{project.link?<Pencil size={16}/>:<Plus size={20}/>}</button>}
@@ -51,6 +51,7 @@ export default function ProjectGallery(){
         <label className="field"><span>Project title</span><input required maxLength={160} value={draft.title} onChange={e=>setDraft(d=>({...d,title:e.target.value}))}/></label>
         <label className="field"><span>Category (optional)</span><input maxLength={80} placeholder="e.g. AI video, animation, design" value={draft.category} onChange={e=>setDraft(d=>({...d,category:e.target.value}))}/></label>
         <label className="field"><span><LinkIcon size={12}/> Project link (optional)</span><input type="url" maxLength={1500} placeholder="https://" value={draft.link} onChange={e=>setDraft(d=>({...d,link:e.target.value}))}/></label>
+        <label className="field"><span>Video cover image URL (optional)</span><input type="url" maxLength={1500} placeholder="https://your-site.com/cover.jpg" value={draft.cover??''} onChange={e=>setDraft(d=>({...d,cover:e.target.value}))}/><small>Shown before playback. Leave blank to use the video’s default preview.</small></label>
         <label className="field"><span>A few words about it (optional)</span><textarea rows={3} maxLength={1500} value={draft.description} onChange={e=>setDraft(d=>({...d,description:e.target.value}))}/></label>
         <fieldset className="project-style-picker"><legend>Choose a cover style</legend>{projectStyles.map(style=><button key={style} type="button" className={`style-swatch swatch-${style}`} aria-label={`${style} cover`} aria-pressed={draft.style===style} onClick={()=>setDraft(d=>({...d,style}))}>{draft.style===style&&<Check size={15}/>}</button>)}</fieldset>
         <div className="project-form-actions"><button type="button" className="button" onClick={close}>Cancel</button><button type="submit" className="button accent-button neu" disabled={busy}><Plus size={16}/>{busy?'Saving…':editingId?'Save project':'Add project space'}</button></div>
