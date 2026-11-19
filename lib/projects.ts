@@ -13,7 +13,7 @@ export type ProjectEntry=z.infer<typeof projectEntrySchema>;
 export type PortfolioProject=ProjectEntry & {id:string};
 export const initialProjects:PortfolioProject[]=projectStyles.map((style,index)=>({
   id:`project-space-${String(index+1).padStart(2,'0')}`,
-  title:index===0?'G-LIM Dishwasher Ad':`Project placeholder ${String(index+1).padStart(2,'0')}`,
-  category:index===0?'Advertisement':'',description:'',link:index===0?'/OUT_V2.mp4':'',cover:index===0?'/glim-cover.jpeg':'',style,
+  title:index===0?'G-LIM Dishwasher Ad':index===1?'UNITY WATCH AD':`Project placeholder ${String(index+1).padStart(2,'0')}`,
+  category:index<=1?'Advertisement':'',description:'',link:index===0?'/OUT_V2.mp4':index===1?'/watch_out_v2.mp4':'',cover:index===0?'/glim-cover.jpeg':index===1?'/Unity%20Chronograph%20at%20Sunset.png':'',style,
 }));
 export const projectMutationSchema=z.object({entry:projectEntrySchema,revision:z.number().int().nonnegative(),projectId:z.string().max(100).optional()});
