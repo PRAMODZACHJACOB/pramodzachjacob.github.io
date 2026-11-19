@@ -15,6 +15,7 @@ export default function ProjectGallery(){
   }
   return <section className="section work-section" id="work">
     <div className="section-heading"><div><p className="eyebrow">A WORLD OF POSSIBILITIES</p><h2>Made to stand out<span>.</span></h2></div></div>
-    <div className="project-grid">{initialProjects.map(card)}</div>
+    <div className="project-grid project-stacked-grid">{[[0,3],[1,4],[2,5]].map((indices,column)=><div className="project-stack" key={column}>{indices.map(index=>card(initialProjects[index],index))}</div>)}</div>
+    <style>{`.project-stacked-grid{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}.project-stack{display:flex;flex-direction:column;gap:25px;min-width:0}.project-stack>.project-card{width:100%}@media(max-width:800px){.project-stacked-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:580px){.project-stacked-grid{grid-template-columns:minmax(0,1fr)}}`}</style>
   </section>;
 }
